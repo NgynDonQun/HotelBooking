@@ -33,9 +33,9 @@ namespace HotelBooking.Models
     partial void InsertAdmin(Admin instance);
     partial void UpdateAdmin(Admin instance);
     partial void DeleteAdmin(Admin instance);
-    partial void InsertUser(Users instance);
-    partial void UpdateUser(Users instance);
-    partial void DeleteUser(Users instance);
+    partial void InsertUser(User instance);
+    partial void UpdateUser(User instance);
+    partial void DeleteUser(User instance);
     partial void InsertBookingItem(BookingItem instance);
     partial void UpdateBookingItem(BookingItem instance);
     partial void DeleteBookingItem(BookingItem instance);
@@ -109,11 +109,11 @@ namespace HotelBooking.Models
 			}
 		}
 		
-		public System.Data.Linq.Table<Users> Users
+		public System.Data.Linq.Table<User> Users
 		{
 			get
 			{
-				return this.GetTable<Users>();
+				return this.GetTable<User>();
 			}
 		}
 		
@@ -232,7 +232,7 @@ namespace HotelBooking.Models
 		
 		private string _FullName;
 		
-		private EntityRef<Users> _User;
+		private EntityRef<User> _User;
 		
     #region Extensibility Method Definitions
     partial void OnLoaded();
@@ -246,7 +246,7 @@ namespace HotelBooking.Models
 		
 		public Admin()
 		{
-			this._User = default(EntityRef<Users>);
+			this._User = default(EntityRef<User>);
 			OnCreated();
 		}
 		
@@ -295,7 +295,7 @@ namespace HotelBooking.Models
 		}
 		
 		[global::System.Data.Linq.Mapping.AssociationAttribute(Name="User_Admin", Storage="_User", ThisKey="UserId", OtherKey="Id", IsForeignKey=true)]
-		public Users User
+		public User User
 		{
 			get
 			{
@@ -303,7 +303,7 @@ namespace HotelBooking.Models
 			}
 			set
 			{
-				Users previousValue = this._User.Entity;
+				User previousValue = this._User.Entity;
 				if (((previousValue != value) 
 							|| (this._User.HasLoadedOrAssignedValue == false)))
 				{
@@ -350,7 +350,7 @@ namespace HotelBooking.Models
 	}
 	
 	[global::System.Data.Linq.Mapping.TableAttribute(Name="dbo.Users")]
-	public partial class Users : INotifyPropertyChanging, INotifyPropertyChanged
+	public partial class User : INotifyPropertyChanging, INotifyPropertyChanged
 	{
 		
 		private static PropertyChangingEventArgs emptyChangingEventArgs = new PropertyChangingEventArgs(String.Empty);
@@ -395,7 +395,7 @@ namespace HotelBooking.Models
     partial void OnCreatedAtChanged();
     #endregion
 		
-		public Users()
+		public User()
 		{
 			this._Admin = default(EntityRef<Admin>);
 			this._Bookings = new EntitySet<Booking>(new Action<Booking>(this.attach_Bookings), new Action<Booking>(this.detach_Bookings));
@@ -1017,7 +1017,7 @@ namespace HotelBooking.Models
 		
 		private EntitySet<Review> _Reviews;
 		
-		private EntityRef<Users> _User;
+		private EntityRef<User> _User;
 		
 		private EntityRef<Hotel> _Hotel;
 		
@@ -1071,7 +1071,7 @@ namespace HotelBooking.Models
 			this._LoyaltyPoints = new EntitySet<LoyaltyPoint>(new Action<LoyaltyPoint>(this.attach_LoyaltyPoints), new Action<LoyaltyPoint>(this.detach_LoyaltyPoints));
 			this._Payments = new EntitySet<Payment>(new Action<Payment>(this.attach_Payments), new Action<Payment>(this.detach_Payments));
 			this._Reviews = new EntitySet<Review>(new Action<Review>(this.attach_Reviews), new Action<Review>(this.detach_Reviews));
-			this._User = default(EntityRef<Users>);
+			this._User = default(EntityRef<User>);
 			this._Hotel = default(EntityRef<Hotel>);
 			this._Promotion = default(EntityRef<Promotion>);
 			OnCreated();
@@ -1502,7 +1502,7 @@ namespace HotelBooking.Models
 		}
 		
 		[global::System.Data.Linq.Mapping.AssociationAttribute(Name="User_Booking", Storage="_User", ThisKey="UserId", OtherKey="Id", IsForeignKey=true)]
-		public Users User
+		public User User
 		{
 			get
 			{
@@ -1510,7 +1510,7 @@ namespace HotelBooking.Models
 			}
 			set
 			{
-				Users previousValue = this._User.Entity;
+				User previousValue = this._User.Entity;
 				if (((previousValue != value) 
 							|| (this._User.HasLoadedOrAssignedValue == false)))
 				{
@@ -1688,7 +1688,7 @@ namespace HotelBooking.Models
 		
 		private int _TotalPoints;
 		
-		private EntityRef<Users> _User;
+		private EntityRef<User> _User;
 		
 		private EntityRef<LoyaltyTier> _LoyaltyTier;
 		
@@ -1710,7 +1710,7 @@ namespace HotelBooking.Models
 		
 		public Customer()
 		{
-			this._User = default(EntityRef<Users>);
+			this._User = default(EntityRef<User>);
 			this._LoyaltyTier = default(EntityRef<LoyaltyTier>);
 			OnCreated();
 		}
@@ -1824,7 +1824,7 @@ namespace HotelBooking.Models
 		}
 		
 		[global::System.Data.Linq.Mapping.AssociationAttribute(Name="User_Customer", Storage="_User", ThisKey="UserId", OtherKey="Id", IsForeignKey=true)]
-		public Users User
+		public User User
 		{
 			get
 			{
@@ -1832,7 +1832,7 @@ namespace HotelBooking.Models
 			}
 			set
 			{
-				Users previousValue = this._User.Entity;
+				User previousValue = this._User.Entity;
 				if (((previousValue != value) 
 							|| (this._User.HasLoadedOrAssignedValue == false)))
 				{
@@ -2521,7 +2521,7 @@ namespace HotelBooking.Models
 		
 		private EntityRef<Booking> _Booking;
 		
-		private EntityRef<Users> _User;
+		private EntityRef<User> _User;
 		
     #region Extensibility Method Definitions
     partial void OnLoaded();
@@ -2544,7 +2544,7 @@ namespace HotelBooking.Models
 		public LoyaltyPoint()
 		{
 			this._Booking = default(EntityRef<Booking>);
-			this._User = default(EntityRef<Users>);
+			this._User = default(EntityRef<User>);
 			OnCreated();
 		}
 		
@@ -2711,7 +2711,7 @@ namespace HotelBooking.Models
 		}
 		
 		[global::System.Data.Linq.Mapping.AssociationAttribute(Name="User_LoyaltyPoint", Storage="_User", ThisKey="UserId", OtherKey="Id", IsForeignKey=true)]
-		public Users User
+		public User User
 		{
 			get
 			{
@@ -2719,7 +2719,7 @@ namespace HotelBooking.Models
 			}
 			set
 			{
-				Users previousValue = this._User.Entity;
+				User previousValue = this._User.Entity;
 				if (((previousValue != value) 
 							|| (this._User.HasLoadedOrAssignedValue == false)))
 				{
@@ -3606,7 +3606,7 @@ namespace HotelBooking.Models
 		
 		private EntityRef<Hotel> _Hotel;
 		
-		private EntityRef<Users> _User;
+		private EntityRef<User> _User;
 		
     #region Extensibility Method Definitions
     partial void OnLoaded();
@@ -3638,7 +3638,7 @@ namespace HotelBooking.Models
 		{
 			this._Booking = default(EntityRef<Booking>);
 			this._Hotel = default(EntityRef<Hotel>);
-			this._User = default(EntityRef<Users>);
+			this._User = default(EntityRef<User>);
 			OnCreated();
 		}
 		
@@ -3923,7 +3923,7 @@ namespace HotelBooking.Models
 		}
 		
 		[global::System.Data.Linq.Mapping.AssociationAttribute(Name="User_Review", Storage="_User", ThisKey="UserId", OtherKey="Id", IsForeignKey=true)]
-		public Users User
+		public User User
 		{
 			get
 			{
@@ -3931,7 +3931,7 @@ namespace HotelBooking.Models
 			}
 			set
 			{
-				Users previousValue = this._User.Entity;
+				User previousValue = this._User.Entity;
 				if (((previousValue != value) 
 							|| (this._User.HasLoadedOrAssignedValue == false)))
 				{

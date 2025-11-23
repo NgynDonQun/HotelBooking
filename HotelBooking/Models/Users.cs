@@ -1,6 +1,6 @@
 ﻿namespace HotelBooking.Models
 {
-    public class UserModel
+    public class UsersModel: User
     {
         public int Id { get; set; }
         public string Email { get; set; }

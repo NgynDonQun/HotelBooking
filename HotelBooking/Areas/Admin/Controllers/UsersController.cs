@@ -62,7 +62,7 @@ namespace HotelBooking.Areas.Admin.Controllers
         }
 
         [HttpPost]
-        public ActionResult UpdateUser(UserModel model) // model có thể là anonymous cũng được
+        public ActionResult UpdateUser(UsersModel model) // model có thể là anonymous cũng được
         {
             try
             {

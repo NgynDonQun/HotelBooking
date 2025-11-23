@@ -1,1 +1,75 @@
-﻿
+﻿@{
+    ViewBag.Title = "Khách hàng";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+<div class="app-content-header">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-sm-6">
+                <h3 class="mb-0">Quản lý khách hàng</h3>
+            </div>
+            <div class="col-sm-6">
+                <ol class="breadcrumb float-sm-end">
+                    <li class="breadcrumb-item"><a href="/Admin/Hotel">Admin</a></li>
+                    <li class="breadcrumb-item active">QL Khách Hàng</li>
+                </ol>
+            </div>
+        </div>
+
+        <div class="row mt-3">
+            <div class="col-sm-12">
+                <a href="/Admin/Customers/Create" class="btn btn-success" style="float:right">+ Thêm</a>
+            </div>
+
+            <div class="col-sm-12 mt-3" id="div_ShowData">
+                <table id="tbl_showdata" class="table table-bordered table-striped">
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section scripts {
+    <script>
+        var url_domain = window.location.origin;
+
+        $(document).ready(function () {
+            loadCustomers();
+        });
+
+
+        function loadCustomers() {
+            $.ajax({
+                type: "GET",
+                url: url_domain + '/Admin/Customers/GetAllCustomers',
+                success: function (response) {
+                    console.log(response);
+
+                    if (response.success) {
+                        var customers = response.data;
+                        var tbl = $("#tbl_showdata");
+                        var html = "<thead><tr>";
+                        html += "<th>STT</th><th>UserId</th><th>Họ tên</th><th>Số điện thoại</th><th>Rank</th><th>Thao tác</th>";
+                        html += "</tr></thead><tbody>";
+                        for (var i = 0; i < customers.length; i++) {
+                            var customer = customers[i];
+                            html += "<tr>";
+                            html += "<td>" + (i + 1) + "</td>";
+                            html += "<td>" + customer.UserId + "</td>";
+                            html += "<td>" + customer.FullName + "</td>";
+                            html += "<td>" + customer.Phone + "</td>";
+                            html += "<td>" + (customer.LoyaltyTierId ?? "Chưa xếp hạng") + "</td>";
+                            html += "<td><a href='/Admin/Customers/Edit/" + customer.UserId + "' class='btn btn-primary btn-sm'>Sửa</a> <button type='button' class='btn btn-sm btn-danger' onclick='deleteCustomer(" + customer.UserId + ")'>Xóa</button></td>";
+                            html += "</tr>";
+                        }
+                        html += "</tbody>";
+                        tbl.html(html);
+                    } else {
+                        alert("Lỗi tải dữ liệu khách hàng.");
+                    }
+                }
+            })
+        }
+    </script>
+}

@@ -37,7 +37,7 @@ namespace HotelBooking.Controllers
                     return Json(new { success = false, message = "Email đã tồn tại" });
 
                 // Create user
-                var user = new Users
+                var user = new User
                 {
                     Email = model.Email,
                     Password = model.Password, // KHÔNG HASH (theo giả định)
