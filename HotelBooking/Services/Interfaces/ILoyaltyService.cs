@@ -11,6 +11,5 @@ namespace HotelBooking.Services.Interfaces
         void UpdateTier(LoyaltyTier tier);
         void DeleteTier(int id);
         int GetCustomerPoints(int userId);
-        void AddPoints(int userId, int points, int? bookingId, string reason);
     }
 }

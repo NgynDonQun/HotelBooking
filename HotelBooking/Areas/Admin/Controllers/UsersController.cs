@@ -62,8 +62,10 @@ namespace HotelBooking.Areas.Admin.Controllers
         }
 
         [HttpPost]
-        public ActionResult UpdateUser(UsersModel model) // model có thể là anonymous cũng được
+        public ActionResult UpdateUser() // model có thể là anonymous cũng được
         {
+            var model = _db.Users.Context.GetChangeSet().Inserts.OfType<User>().FirstOrDefault();
+
             try
             {
                 var user = _db.Users.FirstOrDefault(u => u.Id == model.Id);
@@ -86,6 +88,25 @@ namespace HotelBooking.Areas.Admin.Controllers
                 _db.SubmitChanges();
 
                 return Json(new { success = true, message = "Cập nhật tài khoản thành công!" });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "Lỗi: " + ex.Message });
+            }
+        }
+
+        // POST: Admin/Users/DeleteUser - AJAX
+        [HttpPost]
+        public ActionResult DeleteUser(int id)
+        {
+            try
+            {
+                var user = _db.Users.FirstOrDefault(u => u.Id == id);
+                if (user == null)
+                    return Json(new { success = false, message = "Không tìm thấy tài khoản" });
+                user.IsActive = false; // Chuyển trạng thái thành không hoạt động
+                user.DeletedAt = DateTime.Now;  
+                return Json(new { success = true, message = "Xóa tài khoản thành công!" });
             }
             catch (Exception ex)
             {

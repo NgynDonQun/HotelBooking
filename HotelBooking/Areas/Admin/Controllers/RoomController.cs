@@ -1,5 +1,5 @@
 ﻿using HotelBooking.Models;
-using System;
+using System;       
 using System.Linq;
 using System.Web.Mvc;
 
@@ -132,7 +132,7 @@ namespace HotelBooking.Areas.Admin.Controllers
                         r.Capacity,
                         r.PricePerNight,
                         r.TotalRooms,
-                        r.TaxIncluded
+                        
                     })
                     .FirstOrDefault();
 
@@ -166,7 +166,7 @@ namespace HotelBooking.Areas.Admin.Controllers
                     room.Capacity = model.Capacity;
                     room.PricePerNight = model.PricePerNight;
                     room.TotalRooms = model.TotalRooms;
-                    room.TaxIncluded = model.TaxIncluded;
+                    //room.TaxIncluded = model.TaxIncluded;
                     room.UpdatedAt = DateTime.Now;
 
                     _db.SubmitChanges();

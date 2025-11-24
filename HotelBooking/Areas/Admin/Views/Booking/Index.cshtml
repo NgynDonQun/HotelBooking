@@ -35,32 +35,6 @@
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             overflow: hidden;
         }
-
-        .badge-confirmed {
-            background-color: #d1e7dd;
-            color: #0f5132;
-        }
-
-        .badge-pending {
-            background-color: #fff3cd;
-            color: #856404;
-        }
-
-        .badge-paid {
-            background-color: #d4edda;
-            color: #155724;
-        }
-
-        .badge-cancelled {
-            background-color: #f8d7da;
-            color: #842029;
-        }
-
-        .badge-draft {
-            background-color: #e2e3e5;
-            color: #383d41;
-        }
-
         .customer-info {
             display: flex;
             align-items: start;
@@ -201,16 +175,16 @@
 
         // Badge trạng thái
         function getStatusBadge(status) {
+            const s = (status || '').trim().toLowerCase();
             const map = {
-                'Confirmed': 'badge-confirmed',
-                'Pending': 'badge-pending',
-                'Paid': 'badge-paid',
-                'Cancelled': 'badge-cancelled',
-                'Draft': 'badge-draft'
+                'confirmed': 'bg-success text-white',      // chữ trắng trên nền xanh
+                'paid': 'bg-success text-white',      // xanh lá = đã thanh toán
+                'pending': 'bg-warning text-dark',       // vàng + chữ đen (rõ nhất)
+                'cancelled': 'bg-danger text-white',       // đỏ + chữ trắng
+                'draft': 'bg-secondary text-white'    // xám + chữ trắng
             };
-            return map[status] || 'bg-secondary';
+            return map[s] || 'bg-secondary text-white';
         }
-
         // Chuyển MM/dd/yy → YYYY-MM-DD
         function formatToDateInput(dateStr) {
             if (!dateStr || dateStr === 'N/A') return null;
@@ -266,7 +240,7 @@
                             checkOutDate: safe(b.CheckOutDate),
                             guests: b.Guests || 0,
                             totalAmount: b.TotalAmount || 0,
-                            status: b.Status || 'Pending',
+                            status: (b.Status || 'Pending').trim().replace(/^\w/, c => c.toUpperCase()),
                             createdAt: safe(b.CreatedAt)
                         }));
                         applyFilters();
@@ -351,7 +325,7 @@
                     <td>${b.checkOutDate}</td>
                     <td><i class="bi bi-people text-muted"></i> ${b.guests}</td>
                     <td><strong>${formatCurrency(b.totalAmount)}</strong></td>
-                    <td><span class="badge ${getStatusBadge(b.status)} px-3 py-2">${b.status}</span></td>
+                    <td><span class="badge rounded-pill ${getStatusBadge(b.status)} px-3 py-2">${b.status}</span></td>
                 </tr>
             `).join('');
 
