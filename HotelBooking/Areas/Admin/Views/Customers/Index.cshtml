@@ -18,9 +18,9 @@
         </div>
 
         <div class="row mt-3">
-            <div class="col-sm-12">
+            @*<div class="col-sm-12">
                 <a href="/Admin/Customers/Create" class="btn btn-success" style="float:right">+ Thêm</a>
-            </div>
+            </div>*@
 
             <div class="col-sm-12 mt-3" id="div_ShowData">
                 <table id="tbl_showdata" class="table table-bordered table-striped">
@@ -60,7 +60,7 @@
                             html += "<td>" + customer.FullName + "</td>";
                             html += "<td>" + customer.Phone + "</td>";
                             html += "<td>" + (customer.LoyaltyTierId ?? "Chưa xếp hạng") + "</td>";
-                            html += "<td><a href='"+ url_domain     +"/Admin/Customers/Edit/" + customer.UserId + "' class='btn btn-primary btn-sm'>Sửa</a> <button type='button' class='btn btn-sm btn-danger' onclick='deleteCustomer(" + customer.UserId + ")'>Xóa</button></td>";
+                            html += "<td><a href='" + url_domain + "/Admin/Customers/Edit/" + customer.UserId + "' class='btn btn-primary btn-sm'>Sửa</a> <button type='button' class='btn btn-sm btn-danger' onclick='deleteCustomer(" + customer.UserId + ")'>Xóa</button></td>";
                             html += "</tr>";
                         }
                         html += "</tbody>";

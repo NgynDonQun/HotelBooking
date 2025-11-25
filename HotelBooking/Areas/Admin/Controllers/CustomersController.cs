@@ -5,6 +5,7 @@ using System.Linq;
 using System.Web;
 using System.Web.Mvc;
 
+
 namespace HotelBooking.Areas.Admin.Controllers
 {
     public class CustomersController : Controller
@@ -123,15 +124,11 @@ namespace HotelBooking.Areas.Admin.Controllers
         //        var exist = _db.Customers.Any(c => c.Phone == Phone);
         //        if (exist)
         //            return Json(new { success = false, message = "Số điện thoại đã tồn tại!" });
-                
-        //        var customer = new global::Customer
+
+        //        var customer = new Models.Customer
         //        {
         //            FullName = FullName,
         //            Phone = Phone,
-        //            Email = Email,
-        //            Address = Address,
-        //            Notes = Notes,
-        //            CreatedDate = DateTime.Now,
         //            TotalPoints = 0
         //        };
 

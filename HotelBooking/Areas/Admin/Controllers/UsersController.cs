@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Web;
 using System.Web.Mvc;
 
@@ -112,6 +113,113 @@ namespace HotelBooking.Areas.Admin.Controllers
             {
                 return Json(new { success = false, message = "Lỗi: " + ex.Message });
             }
+        }
+        // 1. Kiểm tra Id đã tồn tại chưa
+        [HttpGet]
+        public JsonResult CheckIdExists(int id)
+        {
+            bool exists = _db.Users.Any(u => u.Id == id);
+            return Json(new { exists }, JsonRequestBehavior.AllowGet);
+        }
+
+        // 2. Kiểm tra Email đã tồn tại chưa
+        [HttpGet]
+        public JsonResult CheckEmailExists(string email)
+        {
+            bool exists = _db.Users.Any(u => u.Email == email.Trim());
+            return Json(new { exists }, JsonRequestBehavior.AllowGet);
+        }
+
+        // 3. Kiểm tra Phone đã tồn tại trong bảng Customers (nếu là customer)
+        [HttpGet]
+        public JsonResult CheckPhoneExists(string phone)
+        {
+            bool exists = _db.Customers.Any(c => c.Phone == phone.Trim()); // ← dùng _db
+            return Json(new { exists }, JsonRequestBehavior.AllowGet);
+        }
+
+        // 4. Action chính: Thêm User mới (Create)
+        [HttpPost]
+        public JsonResult CreateUser()
+        {
+            try
+            {
+                int id = int.Parse(Request["Id"] ?? "0");
+                string email = (Request["Email"] ?? "").Trim();
+                string password = Request["Password"]?.Trim();
+                string role = (Request["Role"] ?? "").Trim();
+                string fullName = (Request["FullName"] ?? "").Trim();
+                string phone = (Request["Phone"] ?? "").Trim();
+
+                if (id <= 0) return Json(new { success = false, message = "Mã Id không hợp lệ!" });
+                if (string.IsNullOrEmpty(email)) return Json(new { success = false, message = "Email bắt buộc!" });
+                if (string.IsNullOrEmpty(password)) return Json(new { success = false, message = "Mật khẩu bắt buộc!" });
+                if (string.IsNullOrEmpty(fullName)) return Json(new { success = false, message = "Họ tên bắt buộc!" });
+                if (string.IsNullOrEmpty(role)) return Json(new { success = false, message = "Chọn vai trò!" });
+
+                // === DÙNG CHUNG 1 DATACONTEXT _db → TRÁNH LỖI TRÙNG ===
+                if (_db.Users.Any(u => u.Id == id))
+                    return Json(new { success = false, message = "Mã người dùng đã tồn tại!" });
+
+                if (_db.Users.Any(u => u.Email == email))
+                    return Json(new { success = false, message = "Email đã được sử dụng!" });
+
+                // === 1. TẠO USER TRƯỚC ===
+                var newUser = new User
+                {
+                    Email = email,
+                    Password = password,
+                    Role = role,
+                    IsActive = true,
+                    CreatedAt = DateTime.Now
+                };
+
+                _db.Users.InsertOnSubmit(newUser);
+                _db.SubmitChanges(); // ← User đã vào DB thật
+
+                // === 2. TẠO ADMIN HOẶC CUSTOMER ===
+                if (role == "admin")
+                {
+                    _db.Admins.InsertOnSubmit(new Models.Admin
+                    {
+                        UserId = newUser.Id,
+                        FullName = fullName
+                    });
+                }
+                else if (role == "customer")
+                {
+                    if (string.IsNullOrEmpty(phone))
+                        return Json(new { success = false, message = "Số điện thoại bắt buộc!" });
+
+                    if (!Regex.IsMatch(phone, @"^0[3-9]\d{8}$"))
+                        return Json(new { success = false, message = "Số điện thoại không hợp lệ!" });
+
+                    if (_db.Customers.Any(c => c.Phone == phone))
+                        return Json(new { success = false, message = "Số điện thoại đã tồn tại!" });
+
+                    _db.Customers.InsertOnSubmit(new Models.Customer
+                    {
+                        UserId = newUser.Id,
+                        FullName = fullName,
+                        Phone = phone,
+                        LoyaltyTierId = 1,
+                        TotalPoints = 0
+                    });
+                }
+
+                _db.SubmitChanges(); // ← Lưu Admin/Customer
+
+                return Json(new { success = true, message = "Thêm người dùng thành công!" });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "Lỗi: " + ex.Message });
+            }
+        }
+
+        public ActionResult Create()
+        {
+            return View();
         }
 
     }

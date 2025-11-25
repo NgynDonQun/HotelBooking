@@ -127,6 +127,7 @@
     <Compile Include="Areas\Admin\AdminAreaRegistration.cs" />
     <Compile Include="Areas\Admin\Controllers\BookingController.cs" />
     <Compile Include="Areas\Admin\Controllers\CustomersController.cs" />
+    <Compile Include="Areas\Admin\Controllers\HotelBookingDataContext.cs" />
     <Compile Include="Areas\Admin\Controllers\HotelController.cs" />
     <Compile Include="Areas\Admin\Controllers\LoyaltyController.cs" />
     <Compile Include="Areas\Admin\Controllers\PromoController.cs" />
@@ -225,16 +226,18 @@
     <Content Include="Areas\Admin\Views\Report\Revenue.cshtml" />
     <Content Include="Areas\Admin\Views\Booking\Index.cshtml" />
     <Content Include="Areas\Admin\Views\Users\Index.cshtml" />
-    <Content Include="Areas\Admin\Views\Customer\Index.cshtml" />
     <Content Include="Areas\Admin\Views\Users\Edit.cshtml" />
     <Content Include="Areas\Admin\Views\Room\Edit.cshtml" />
-    <Content Include="Areas\Admin\Views\Customer\Create.cshtml" />
+    <Content Include="Areas\Admin\Views\Customers\Index.cshtml" />
+    <Content Include="Areas\Admin\Views\_ViewStart.cshtml" />
+    <Content Include="Areas\Admin\Views\Shared\_Layout.cshtml" />
+    <Content Include="Areas\Admin\Views\Customers\Edit.cshtml" />
     <Content Include="Models\Database.dbml">
       <Generator>MSLinqToSQLGenerator</Generator>
       <LastGenOutput>Database.designer.cs</LastGenOutput>
       <SubType>Designer</SubType>
     </Content>
-    <Content Include="Areas\Admin\Views\Customer\Edit.cshtml" />
+    <Content Include="Areas\Admin\Views\Users\Create.cshtml" />
     <None Include="Models\Database.dbml.layout">
       <DependentUpon>Database.dbml</DependentUpon>
     </None>
