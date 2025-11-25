@@ -115,6 +115,47 @@ namespace HotelBooking.Areas.Admin.Controllers
                 return Json(new { success = false, message = "Lỗi: " + ex.Message });
             }
         }
+        [HttpGet]
+        public ActionResult GetAllCustomers(string keyword = null, string tier = null)
+        {
+            try
+            {
+                var query = _db.Customers.AsQueryable();
+
+                // === TÌM KIẾM THEO TÊN HOẶC SỐ ĐIỆN THOẠI ===
+                if (!string.IsNullOrWhiteSpace(keyword))
+                {
+                    keyword = keyword.Trim().ToLower();
+                    query = query.Where(c =>
+                        (c.FullName != null && c.FullName.ToLower().Contains(keyword)) ||
+                        (c.Phone != null && c.Phone.Contains(keyword))
+                    );
+                }
+
+                // === LỌC THEO HẠNG THÀNH VIÊN (LoyaltyTierId) ===
+                if (!string.IsNullOrWhiteSpace(tier) && int.TryParse(tier, out int tierId) && tierId > 0)
+                {
+                    query = query.Where(c => c.LoyaltyTierId == tierId);
+                }
+
+                var customers = query.Select(c => new
+                {
+                    UserId = c.UserId,
+                    FullName = c.FullName ?? "Chưa đặt tên",
+                    Phone = c.Phone ?? "Chưa có số điện thoại",
+                    LoyaltyTierId = c.LoyaltyTierId,
+                    TotalPoints = c.TotalPoints
+                })
+                .OrderBy(c => c.FullName)
+                .ToList();
+
+                return Json(new { success = true, data = customers }, JsonRequestBehavior.AllowGet);
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message }, JsonRequestBehavior.AllowGet);
+            }
+        }
         //[HttpPost]
         //public ActionResult CreateCustomer(string FullName, string Phone, string Email = "", string Address = "", string Notes = "")
         //{

@@ -20,22 +20,56 @@ namespace HotelBooking.Areas.Admin.Controllers
         {
             _db = new DatabaseDataContext();
         }
-        public ActionResult GetAllUsers()
+        // GET: Admin/Users/GetAllUsers?keyword=abc&role=admin
+        [HttpGet]
+        public ActionResult GetAllUsers(string keyword = null, string role = null)
         {
             try
             {
-                var users = _db.Users
-                    .Select(u => new
-                    {
-                        id = u.Id,
-                        email = u.Email,
-                        role = u.Role,
-                        password = u.Password,
-                        isActive = u.IsActive
-                    })
-                    .ToList();
+                // Lấy tất cả user + join thông tin tên và phone
+                var users = _db.Users.Select(u => new
+                {
+                    id = u.Id,
+                    email = u.Email,
+                    password = u.Password,
+                    role = u.Role,
+                    isActive = u.IsActive,
+                    fullName = u.Role == "admin"
+                        ? _db.Admins.Where(a => a.UserId == u.Id).Select(a => a.FullName).FirstOrDefault()
+                        : _db.Customers.Where(c => c.UserId == u.Id).Select(c => c.FullName).FirstOrDefault(),
+                    phone = u.Role == "customer"
+                        ? _db.Customers.Where(c => c.UserId == u.Id).Select(c => c.Phone).FirstOrDefault()
+                        : (string)null
+                }).AsQueryable();
 
-                return Json(new { success = true, data = users }, JsonRequestBehavior.AllowGet);
+                // === TÌM KIẾM ===
+                if (!string.IsNullOrWhiteSpace(keyword))
+                {
+                    keyword = keyword.Trim().ToLower();
+                    users = users.Where(u =>
+                        u.email.ToLower().Contains(keyword) ||
+                        (u.fullName != null && u.fullName.ToLower().Contains(keyword)) ||
+                        (u.phone != null && u.phone.Contains(keyword))
+                    );
+                }
+
+                // === LỌC THEO ROLE ===
+                if (!string.IsNullOrWhiteSpace(role) && (role == "admin" || role == "customer"))
+                {
+                    users = users.Where(u => u.role == role);
+                }
+
+                // Chỉ trả về những field cần thiết (ẩn password nếu muốn bảo mật)
+                var result = users.Select(u => new
+                {
+                    id = u.id,
+                    email = u.email,
+                    password = u.password, // bạn đang hiển thị → có thể đổi thành "••••••" ở View
+                    role = u.role,
+                    isActive = u.isActive
+                }).ToList();
+
+                return Json(new { success = true, data = result }, JsonRequestBehavior.AllowGet);
             }
             catch (Exception ex)
             {
