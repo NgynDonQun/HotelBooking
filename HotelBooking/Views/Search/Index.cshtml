@@ -1,0 +1,244 @@
+﻿@{
+    ViewBag.Title = "Tìm kiếm khách sạn";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<h2>Tìm kiếm khách sạn</h2>
+
+<div class="card">
+    <div class="card-body">
+        <form id="searchForm">
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="location">Địa điểm</label>
+                    <input type="text" class="form-control" id="location" name="Location"
+                           placeholder="Thành phố hoặc tên khách sạn" />
+                </div>
+
+                <div class="col-md-3 mb-3">
+                    <label for="checkInDate">Ngày nhận phòng</label>
+                    <input type="date" class="form-control" id="checkInDate" name="CheckInDate" />
+                </div>
+
+                <div class="col-md-3 mb-3">
+                    <label for="checkOutDate">Ngày trả phòng</label>
+                    <input type="date" class="form-control" id="checkOutDate" name="CheckOutDate" />
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-3 mb-3">
+                    <label for="guests">Số khách</label>
+                    <input type="number" class="form-control" id="guests" name="Guests"
+                           value="1" min="1" max="10" />
+                </div>
+
+                <div class="col-md-9 mb-3 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary btn-lg w-100">🔍 Tìm kiếm</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card mt-3">
+    <div class="card-body">
+        <h5>Bộ lọc</h5>
+        <div class="row">
+            <div class="col-md-3">
+                <label>Hạng sao</label>
+                <div class="form-check">
+                    <input class="form-check-input filter-star" type="checkbox" value="5" id="star5">
+                    <label class="form-check-label" for="star5">⭐⭐⭐⭐⭐</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input filter-star" type="checkbox" value="4" id="star4">
+                    <label class="form-check-label" for="star4">⭐⭐⭐⭐</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input filter-star" type="checkbox" value="3" id="star3">
+                    <label class="form-check-label" for="star3">⭐⭐⭐</label>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <label>Giá mỗi đêm</label>
+                <select class="form-control" id="priceRange">
+                    <option value="">Tất cả</option>
+                    <option value="0-500000">Dưới 500k</option>
+                    <option value="500000-1000000">500k - 1 triệu</option>
+                    <option value="1000000-2000000">1 - 2 triệu</option>
+                    <option value="2000000-999999999">Trên 2 triệu</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="sortBy">Sắp xếp theo</label>
+                <select class="form-control" id="sortBy">
+                    <option value="">Mặc định</option>
+                    <option value="price_asc">Giá: Thấp đến Cao</option>
+                    <option value="price_desc">Giá: Cao đến Thấp</option>
+                    <option value="rating">Đánh giá cao nhất</option>
+                </select>
+            </div>
+            <div class="col-md-3 d-flex align-items-end">
+                <button type="button" class="btn btn-secondary w-100" onclick="clearFilters()">Xóa bộ lọc</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="searchResults" class="mt-3"></div>
+
+@section scripts {
+    <script>
+        var allHotels = []; // Store all hotels
+        var filteredHotels = []; // Store filtered results
+
+        $(document).ready(function () {
+            // Set min date to today
+            var today = new Date().toISOString().split('T')[0];
+            $("#checkInDate").attr('min', today);
+            $("#checkOutDate").attr('min', today);
+
+            $("#checkInDate").change(function () {
+                var checkIn = $(this).val();
+                $("#checkOutDate").attr('min', checkIn);
+                if ($("#checkOutDate").val() && $("#checkOutDate").val() <= checkIn) {
+                    var nextDay = new Date(checkIn);
+                    nextDay.setDate(nextDay.getDate() + 1);
+                    $("#checkOutDate").val(nextDay.toISOString().split('T')[0]);
+                }
+            });
+
+            // Load all hotels on page load
+            loadAllHotels();
+
+            // Search form submit
+            $("#searchForm").submit(function (e) {
+                e.preventDefault();
+                applyFilters();
+            });
+
+            // Filter changes
+            $(".filter-star, #priceRange, #sortBy").change(function () {
+                applyFilters();
+            });
+        });
+
+        function loadAllHotels() {
+            $.ajax({
+                type: "GET",
+                url: window.location.origin + '/Search/GetAllHotels',
+                success: function (response) {
+                    if (response.success) {
+                        allHotels = response.hotels;
+                        filteredHotels = allHotels;
+                        displayResults(filteredHotels);
+                    } else {
+                        $("#searchResults").html('<div class="alert alert-warning">' + response.message + '</div>');
+                    }
+                },
+                error: function () {
+                    $("#searchResults").html('<div class="alert alert-danger">Đã xảy ra lỗi. Vui lòng thử lại.</div>');
+                }
+            });
+        }
+
+        function applyFilters() {
+            filteredHotels = allHotels;
+
+            // Location filter
+            var location = $("#location").val().toLowerCase();
+            if (location) {
+                filteredHotels = filteredHotels.filter(function (h) {
+                    return h.Name.toLowerCase().includes(location) ||
+                        h.City.toLowerCase().includes(location) ||
+                        (h.Address && h.Address.toLowerCase().includes(location));
+                });
+            }
+
+            // Star rating filter
+            var selectedStars = [];
+            $(".filter-star:checked").each(function () {
+                selectedStars.push(parseInt($(this).val()));
+            });
+            if (selectedStars.length > 0) {
+                filteredHotels = filteredHotels.filter(function (h) {
+                    return selectedStars.includes(h.StarRating);
+                });
+            }
+
+            // Price range filter
+            var priceRange = $("#priceRange").val();
+            if (priceRange) {
+                var range = priceRange.split('-');
+                var minPrice = parseInt(range[0]);
+                var maxPrice = parseInt(range[1]);
+                filteredHotels = filteredHotels.filter(function (h) {
+                    return h.MinPrice >= minPrice && h.MinPrice <= maxPrice;
+                });
+            }
+
+            // Sort
+            var sortBy = $("#sortBy").val();
+            if (sortBy === 'price_asc') {
+                filteredHotels.sort(function (a, b) { return a.MinPrice - b.MinPrice; });
+            } else if (sortBy === 'price_desc') {
+                filteredHotels.sort(function (a, b) { return b.MinPrice - a.MinPrice; });
+            } else if (sortBy === 'rating') {
+                filteredHotels.sort(function (a, b) { return (b.AvgRating || 0) - (a.AvgRating || 0); });
+            }
+
+            displayResults(filteredHotels);
+        }
+
+        function clearFilters() {
+            $("#location").val('');
+            $("#checkInDate").val('');
+            $("#checkOutDate").val('');
+            $("#guests").val(1);
+            $(".filter-star").prop('checked', false);
+            $("#priceRange").val('');
+            $("#sortBy").val('');
+            filteredHotels = allHotels;
+            displayResults(filteredHotels);
+        }
+
+        function displayResults(hotels) {
+            if (hotels.length === 0) {
+                $("#searchResults").html('<div class="alert alert-info">Không tìm thấy khách sạn nào phù hợp.</div>');
+                return;
+            }
+
+            var html = '<h3 class="mb-3">Tìm thấy ' + hotels.length + ' khách sạn</h3>';
+
+            hotels.forEach(function (hotel) {
+                html += '<div class="card mb-3">';
+                html += '<div class="row g-0">';
+                html += '<div class="col-md-4">';
+                if (hotel.ImageUrl) {
+                    html += '<img src="' + hotel.ImageUrl + '" class="img-fluid rounded-start" style="height: 250px; object-fit: cover; width: 100%;" alt="' + hotel.Name + '">';
+                } else {
+                    html += '<img src="/Content/images/no-image.png" class="img-fluid rounded-start" style="height: 250px; object-fit: cover; width: 100%;" alt="No image">';
+                }
+                html += '</div>';
+                html += '<div class="col-md-8">';
+                html += '<div class="card-body">';
+                html += '<h5 class="card-title">' + hotel.Name + '</h5>';
+                html += '<p class="card-text"><small class="text-muted">' + '⭐'.repeat(hotel.StarRating) + '</small></p>';
+                html += '<p class="card-text"><i class="fas fa-map-marker-alt"></i> ' + hotel.Address + ', ' + hotel.City + ', ' + hotel.Country + '</p>';
+                if (hotel.Description) {
+                    html += '<p class="card-text">' + (hotel.Description.substring(0, 150) + '...') + '</p>';
+                }
+                if (hotel.AvgRating) {
+                    html += '<p class="card-text"><strong>Đánh giá:</strong> ' + hotel.AvgRating.toFixed(1) + '/5 ⭐ (' + hotel.ReviewCount + ' đánh giá)</p>';
+                }
+                html += '<p class="card-text"><strong class="text-danger">Từ ' + hotel.MinPrice.toLocaleString() + ' VNĐ</strong>/đêm</p>';
+                html += '<a href="/Hotel/Details/' + hotel.Id + '" class="btn btn-primary">Xem chi tiết</a>';
+                html += '</div></div></div></div>';
+            });
+
+            $("#searchResults").html(html);
+        }
+    </script>
+}

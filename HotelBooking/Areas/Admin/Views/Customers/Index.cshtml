@@ -1,0 +1,209 @@
+﻿@{
+    ViewBag.Title = "Khách hàng";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+<div class="app-content-header">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-sm-6">
+                <h3 class="mb-0">Quản lý khách hàng</h3>
+            </div>
+            <div class="col-sm-6">
+                <ol class="breadcrumb float-sm-end">
+                    <li class="breadcrumb-item"><a href="/Admin/Hotel">Admin</a></li>
+                    <li class="breadcrumb-item active">QL Khách Hàng</li>
+                </ol>
+            </div>
+        </div>
+
+        <!-- Bộ lọc -->
+        <div class="row mt-3">
+            <div class="col-md-4 mb-3">
+                <label for="searchCustomer">Tìm kiếm khách hàng:</label>
+                <input type="text" class="form-control" id="searchCustomer" placeholder="Nhập tên hoặc số điện thoại...">
+            </div>
+            <div class="col-md-3 mb-3">
+                <label for="filterRank">Lọc theo hạng thành viên:</label>
+                <select class="form-control" id="filterRank">
+                    <option value="">-- Tất cả --</option>
+                    <option value="1">Bronze (1)</option>
+                    <option value="2">Silver (2)</option>
+                    <option value="3">Gold (3)</option>
+                    <option value="4">Platinum (4)</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- BẢNG + PHÂN TRANG DƯỚI BẢNG (đồng bộ với Booking & Khách sạn) -->
+        <div class="card shadow-sm mt-4">
+            <div class="table-responsive">
+                <table class="table table-bordered table-striped table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>STT</th>
+                            <th>UserId</th>
+                            <th>Họ tên</th>
+                            <th>Số điện thoại</th>
+                            <th>Rank</th>
+                            <th>Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbl_showdata">
+                        <tr>
+                            <td colspan="6" class="text-center py-5">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Đang tải...</span>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Footer: thông tin + phân trang -->
+            <div class="card-footer bg-white border-top-0">
+                <div class="d-flex justify-content-between align-items-center py-2">
+                    <small class="text-muted">
+                        Hiển thị <strong id="resultCount">0</strong> / <strong id="totalCount">0</strong> khách hàng
+                    </small>
+                    <nav>
+                        <ul class="pagination pagination-sm mb-0" id="pagination"></ul>
+                    </nav>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section scripts {
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <script>
+        var url_domain = window.location.origin;
+        var searchTimeout;
+        let allCustomers = [];           // ← giữ nguyên biến toàn cục
+        let filteredCustomers = [];       // ← dùng cho phân trang
+        const pageSize = 10;
+        let currentPage = 1;
+
+        $(document).ready(function () {
+            loadCustomers(); // Load data + tự động fill tỉnh/thành (nếu có)
+
+            $("#searchCustomer").on("keyup", function () {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(loadCustomers, 300);
+            });
+
+            $("#filterRank").on("change", function () {
+                loadCustomers();
+            });
+        });
+
+        // Load tất cả khách hàng + tự động đổ dữ liệu tỉnh/thành (nếu có)
+        function loadCustomers() {
+            var keyword = $("#searchCustomer").val().trim();
+            var rank = $("#filterRank").val();
+            var url = url_domain + '/Admin/Customers/GetAllCustomers';
+            var hasParam = false;
+            if (keyword !== "") {
+                url += '?keyword=' + encodeURIComponent(keyword);
+                hasParam = true;
+            }
+            if (rank !== "") {
+                url += (hasParam ? '&' : '?') + 'tier=' + encodeURIComponent(rank);
+            }
+
+            $("#tbl_showdata").html('<tr><td colspan="6" class="text-center py-5"><div class="spinner-border text-primary"></div></td></tr>');
+
+            $.ajax({
+                type: "GET",
+                url: url,
+                success: function (response) {
+                    console.log(response);
+                    if (response.success) {
+                        var customers = response.data;
+                        allCustomers = customers;           // ← giữ nguyên dữ liệu gốc
+                        filteredCustomers = customers;      // ← dùng để phân trang
+                        currentPage = 1;
+                        renderTable();                     // ← render + phân trang
+                    } else {
+                        $("#tbl_showdata").html('<tr><td colspan="6" class="text-center text-danger py-4">Không có dữ liệu</td></tr>');
+                        $("#resultCount").text('0');
+                        $("#totalCount").text('0');
+                        $("#pagination").html('');
+                    }
+                },
+                error: function () {
+                    $("#tbl_showdata").html('<tr><td colspan="6" class="text-center text-danger py-4">Lỗi kết nối server</td></tr>');
+                    $("#resultCount").text('0');
+                    $("#totalCount").text('0');
+                    $("#pagination").html('');
+                }
+            });
+        }
+
+        // Hàm render bảng + phân trang (mới thêm)
+        function renderTable() {
+            const start = (currentPage - 1) * pageSize;
+            const end = start + pageSize;
+            const data = filteredCustomers.slice(start, end);
+
+            let html = '';
+            if (data.length === 0) {
+                html = '<tr><td colspan="6" class="text-center py-5 text-muted">Không tìm thấy khách hàng nào.</td></tr>';
+            } else {
+                for (var i = 0; i < data.length; i++) {
+                    var customer = data[i];
+                    var rankText = customer.LoyaltyTierId ?? "Chưa xếp hạng";
+                    if (customer.LoyaltyTierId == 1) rankText = "Bronze";
+                    else if (customer.LoyaltyTierId == 2) rankText = "Silver";
+                    else if (customer.LoyaltyTierId == 3) rankText = "Gold";
+                    else if (customer.LoyaltyTierId == 4) rankText = "Platinum";
+
+                    html += "<tr>";
+                    html += "<td>" + (start + i + 1) + "</td>";
+                    html += "<td>" + customer.UserId + "</td>";
+                    html += "<td>" + customer.FullName + "</td>";
+                    html += "<td>" + customer.Phone + "</td>";
+                    html += "<td>" + rankText + "</td>";
+                    html += "<td><a href='" + url_domain + "/Admin/Customers/Edit/" + customer.UserId + "' class='btn btn-sm btn-warning me-1'>Sửa</a> <button type='button' class='btn btn-sm btn-danger ms-1' onclick='deleteCustomer(" + customer.UserId + ")'>Xóa</button></td>";
+                    html += "</tr>";
+                }
+            }
+            $("#tbl_showdata").html(html);
+
+            // Cập nhật thông tin hiển thị
+            $("#resultCount").text(data.length);
+            $("#totalCount").text(filteredCustomers.length);
+
+            // Phân trang
+            const pages = Math.max(1, Math.ceil(filteredCustomers.length / pageSize));
+            let pag = '';
+            for (let i = 1; i <= pages; i++) {
+                pag += `<li class="page-item ${i === currentPage ? 'active' : ''}">
+                                <a class="page-link" href="#" onclick="currentPage=${i}; renderTable(); return false;">${i}</a>
+                             </li>`;
+            }
+            $("#pagination").html(pag);
+        }
+
+            //function deleteCustomer(userId) {
+            // if (confirm("Bạn có chắc chắn muốn xóa khách hàng này?")) {
+            // $.ajax({
+            // type: "POST",
+            // url: url_domain + '/Admin/Customers/Delete',
+            // data: { id: userId },
+            // success: function (response) {
+            // if (response.success) {
+            // alert("Xóa khách hàng thành công.");
+            // loadCustomers();
+            // } else {
+            // alert("Lỗi xóa khách hàng: " + response.message);
+            // }
+            //}
+        //     }
+        // });
+        // }
+        //}
+    </script>
+}

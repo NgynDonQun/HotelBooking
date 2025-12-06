@@ -1,0 +1,253 @@
+﻿@{
+    ViewBag.Title = "Quản lý Booking";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+<div class="app-content-header">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-sm-6">
+                <h3 class="mb-0">Quản lý Booking</h3>
+            </div>
+        </div>
+
+        <div class="row g-3 align-items-end mt-4">
+            <div class="col-md-3">
+                <label class="form-label">Tìm mã booking</label>
+                <input type="text" id="searchInput" class="form-control" placeholder="Nhập mã...">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Khách sạn</label>
+                <select id="hotelFilter" class="form-select">
+                    <option value="">Tất cả khách sạn</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Check-in từ</label>
+                <input type="date" id="checkInFilter" class="form-control">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Check-out đến</label>
+                <input type="date" id="checkOutFilter" class="form-control">
+            </div>
+            <div class="col-md-2 d-flex gap-2">
+                <button onclick="applyFilters()" class="btn btn-primary flex-grow-1">Lọc</button>
+                <button onclick="resetFilters()" class="btn btn-outline-secondary">Reset</button>
+            </div>
+        </div>
+
+        <!-- BẢNG + PHÂN TRANG ĐẨY XUỐNG DƯỚI BẢNG -->
+        <div class="card shadow-sm mt-4">
+            <div class="table-responsive">
+                <table class="table table-bordered table-striped table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>MÃ BOOKING</th>
+                            <th>KHÁCH HÀNG</th>
+                            <th>KHÁCH SẠN</th>
+                            <th>CHECK-IN</th>
+                            <th>CHECK-OUT</th>
+                            <th>KHÁCH</th>
+                            <th>TỔNG TIỀN</th>
+                            <th>TRẠNG THÁI</th>
+                        </tr>
+                    </thead>
+                    <tbody id="bookingsTable">
+                        <tr>
+                            <td colspan="8" class="text-center py-5">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- PHÂN TRANG + SỐ LƯỢNG Ở DƯỚI BẢNG (giống hệt trang Khách sạn) -->
+            <div class="card-footer bg-white border-top-0">
+                <div class="d-flex justify-content-between align-items-center py-2">
+                    <small class="text-muted">
+                        Hiển thị <strong id="resultCount">0</strong> / <strong id="totalCount">0</strong> booking(s)
+                    </small>
+                    <nav>
+                        <ul class="pagination pagination-sm mb-0" id="pagination"></ul>
+                    </nav>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section scripts {
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <script>
+        let allBookings = [];
+        let filteredBookings = [];
+        const pageSize = 10;
+        let currentPage = 1;
+
+        const safe = (val, fallback = 'N/A') => val ?? fallback;
+
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
+        }
+
+        function getStatusBadge(status) {
+            const s = (status || '').trim().toLowerCase();
+            const map = {
+                'confirmed': 'bg-success text-white',
+                'paid': 'bg-success text-white',
+                'pending': 'bg-warning text-dark',
+                'cancelled': 'bg-danger text-white',
+                'draft': 'bg-secondary text-white'
+            };
+            return map[s] || 'bg-secondary text-white';
+        }
+
+        function formatToDateInput(dateStr) {
+            if (!dateStr || dateStr === 'N/A') return null;
+            const [m, d, y] = dateStr.split('/');
+            return `20${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+        }
+
+        function loadHotels() {
+            const select = document.getElementById('hotelFilter');
+            select.innerHTML = '<option value="">Tất cả khách sạn</option>';
+            fetch('/Admin/Booking/GetAllHotels')
+                .then(r => r.ok ? r.json() : Promise.reject())
+                .then(res => {
+                    if (res.success && res.data?.length > 0) {
+                        res.data.forEach(h => {
+                            const opt = document.createElement('option');
+                            opt.value = h.Name;
+                            opt.textContent = h.Name;
+                            select.appendChild(opt);
+                        });
+                    }
+                })
+                .catch(() => { });
+        }
+
+        function loadBookings() {
+            const tbody = document.getElementById('bookingsTable');
+            tbody.innerHTML = `<tr><td colspan="8" class="text-center py-5"><div class="spinner-border text-primary"></div></td></tr>`;
+
+            fetch('/Admin/Booking/GetAllBookings')
+                .then(r => r.ok ? r.json() : Promise.reject())
+                .then(res => {
+                    if (res.success && Array.isArray(res.data)) {
+                        allBookings = res.data.map(b => ({
+                            id: b.Id,
+                            code: b.Code,
+                            customerName: safe(b.CustomerName, 'Không xác định'),
+                            customerEmail: safe(b.CustomerEmail, 'N/A'),
+                            hotelName: safe(b.HotelName, 'Không có'),
+                            checkInDate: safe(b.CheckInDate),
+                            checkOutDate: safe(b.CheckOutDate),
+                            guests: b.Guests || 0,
+                            totalAmount: b.TotalAmount || 0,
+                            status: (b.Status || 'Pending').trim().replace(/^\w/, c => c.toUpperCase()),
+                            createdAt: safe(b.CreatedAt)
+                        }));
+                        applyFilters();
+                    }
+                })
+                .catch(() => {
+                    tbody.innerHTML = `<tr><td colspan="8" class="text-center py-5 text-danger">Lỗi tải dữ liệu</td></tr>`;
+                });
+        }
+
+        function applyFilters() {
+            const search = document.getElementById('searchInput').value.trim().toLowerCase();
+            const hotel = document.getElementById('hotelFilter').value;
+            const checkIn = document.getElementById('checkInFilter').value;
+            const checkOut = document.getElementById('checkOutFilter').value;
+
+            filteredBookings = allBookings.filter(b => {
+                if (search && !b.code.toLowerCase().includes(search)) return false;
+                if (hotel && b.hotelName !== hotel) return false;
+                const ci = formatToDateInput(b.checkInDate);
+                const co = formatToDateInput(b.checkOutDate);
+                if (checkIn && ci && ci < checkIn) return false;
+                if (checkOut && co && co > checkOut) return false;
+                return true;
+            });
+
+            currentPage = 1;
+            renderTable();
+        }
+
+        function resetFilters() {
+            document.getElementById('searchInput').value = '';
+            document.getElementById('hotelFilter').value = '';
+            document.getElementById('checkInFilter').value = '';
+            document.getElementById('checkOutFilter').value = '';
+            applyFilters();
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('bookingsTable');
+            const resultCount = document.getElementById('resultCount');
+            const totalCount = document.getElementById('totalCount');
+            const pagination = document.getElementById('pagination');
+
+            const total = filteredBookings.length;
+            const pages = Math.max(1, Math.ceil(total / pageSize));
+            const start = (currentPage - 1) * pageSize;
+            const end = Math.min(start + pageSize, total);
+            const pageData = filteredBookings.slice(start, end);
+
+            resultCount.textContent = pageData.length;
+            totalCount.textContent = total;
+
+            if (total === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" class="text-center py-5 text-muted">Không tìm thấy booking nào</td></tr>`;
+                pagination.innerHTML = '';
+                return;
+            }
+
+            let html = '';
+            pageData.forEach((b, i) => {
+                html += `
+                        <tr>
+                            <td><strong>${b.code}</strong><br><small class="text-muted">${b.createdAt}</small></td>
+                            <td>
+                                <div style="display:flex;align-items:center;gap:8px;">
+                                    <i class="bi bi-person-circle text-muted"></i>
+                                    <div>
+                                        <strong>${b.customerName}</strong><br>
+                                        <small class="text-muted">${b.customerEmail}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>${b.hotelName}</td>
+                            <td>${b.checkInDate}</td>
+                            <td>${b.checkOutDate}</td>
+                            <td>${b.guests}</td>
+                            <td><strong>${formatCurrency(b.totalAmount)}</strong></td>
+                            <td><span class="badge rounded-pill ${getStatusBadge(b.status)} px-3 py-2">${b.status}</span></td>
+                        </tr>`;
+            });
+            tbody.innerHTML = html;
+
+            // Phân trang
+            let pag = '';
+            for (let i = 1; i <= pages; i++) {
+                pag += `<li class="page-item ${i === currentPage ? 'active' : ''}">
+                                <a class="page-link" href="#" onclick="currentPage=${i}; renderTable(); return false;">${i}</a>
+                            </li>`;
+            }
+            pagination.innerHTML = pag;
+        }
+
+        document.getElementById('searchInput').addEventListener('keypress', e => {
+            if (e.key === 'Enter') applyFilters();
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadHotels();
+            loadBookings();
+        });
+    </script>
+}
