@@ -3,126 +3,208 @@
     Layout = "~/Views/Shared/_AdminLayout.cshtml";
 }
 
-<h2>Quản lý Review</h2>
+<div class="app-content-header">
+    <div class="container-fluid">
 
-<div class="form-group">
-    <label>Nhập ID khách sạn:</label>
-    <input type="number" id="hotelId" class="form-control" placeholder="Nhập HotelId..." />
+        <!-- Tiêu đề -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <h3 class="mb-0">Quản lý Đánh giá (Review)</h3>
+            </div>
+        </div>
 
+        <!-- Ô Lọc -->
+        <div class="row mb-3">
+            <div class="col-md-4">
+                <label class="form-label">Lọc theo BookingId</label>
+                <input type="number" id="searchBookingId" class="form-control" placeholder="Nhập BookingId...">
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label">Lọc theo UserId</label>
+                <input type="number" id="searchUserId" class="form-control" placeholder="Nhập UserId...">
+            </div>
+
+            <div class="col-md-4 d-flex align-items-end gap-2">
+                <button class="btn btn-primary w-100" onclick="applyFilter()">
+                    <i class="bi bi-filter"></i> Lọc
+                </button>
+
+                <button onclick="resetFilters()" class="btn btn-outline-secondary">Reset</button>
+            </div>
+        </div>
+
+        <!-- Bảng Review -->
+        <div class="card shadow-sm">
+            <div class="table-responsive">
+                <table class="table table-bordered table-striped table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>ID</th>
+                            <th>BookingId</th>
+                            <th>UserId</th>
+                            <th>Rating</th>
+                            <th>Tiêu đề</th>
+                            <th>Nội dung</th>
+                            <th>Ngày tạo</th>
+                            <th>Hành động</th>
+                        </tr>
+                    </thead>
+                    <tbody id="reviewTable">
+                        <tr>
+                            <td colspan="8" class="text-center py-5">
+                                <div class="spinner-border text-primary" role="status"></div>
+                                <span class="ms-2">Đang tải dữ liệu...</span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Footer -->
+            <div class="card-footer bg-transparent border-top-0">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                    <small class="text-muted">
+                        Hiển thị <strong id="resultCount">0</strong> đánh giá
+                    </small>
+                    <nav>
+                        <ul class="pagination pagination-sm mb-0" id="pagination"></ul>
+                    </nav>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
-
-<hr />
-
-<table class="table table-bordered table-striped mt-3">
-    <thead>
-        <tr>
-            <th>ID</th>
-            <th>Khách sạn</th>
-            <th>Email người dùng</th>
-            <th>Rating</th>
-            <th>Tiêu đề</th>
-            <th>Nội dung</th>
-            <th>Ngày tạo</th>
-            <th>Hành động</th>
-        </tr>
-    </thead>
-    <tbody id="reviewTable">
-        <tr><td colspan="8" class="text-center">Đang tải dữ liệu...</td></tr>
-    </tbody>
-</table>
 
 @section Scripts {
     <script>
+    let allReviews = [];
+    let filtered = [];
+    let currentPage = 1;
+    const pageSize = 10;
 
-        function parseDotNetDate(dotNetDate) {
-            var timestamp = parseInt(dotNetDate.replace(/\/Date\((\d+)\)\//, "$1"));
-            return new Date(timestamp);
-        }
+    function parseDotNetDate(dateStr) {
+        const match = dateStr?.match(/\/Date\((\d+)\)\//);
+        return match ? new Date(parseInt(match[1])) : new Date(dateStr);
+    }
 
+    function formatDate(dateStr) {
+        const d = parseDotNetDate(dateStr);
+        return d ? d.toLocaleDateString('vi-VN') : "-";
+    }
 
-        $(document).ready(function () {
-            loadReviews();
+    $(document).ready(function () {
+        loadReviews();
+
+        // Enter để lọc
+        $("#searchBookingId, #searchUserId").on("keypress", function (e) {
+            if (e.key === "Enter") applyFilter();
         });
+    });
 
-      
-        $("#hotelId").on("keyup", function (e) {
-            if (e.key === "Enter") {
-                loadReviews();
+    function loadReviews() {
+        const url = '@Url.Action("GetAllReviews", "Review", new { area = "Admin" })';
+
+        $.get(url).done(res => {
+            if (res.success) {
+                allReviews = res.data;
+                filtered = allReviews;
+                renderTable();
             }
         });
+    }
 
+    // ==============================
+    //            LỌC
+    // ==============================
+    function applyFilter() {
+        let bookingId = $("#searchBookingId").val().trim();
+        let userId = $("#searchUserId").val().trim();
 
-        function loadReviews() {
-            var hotelId = document.getElementById("hotelId").value;
+        filtered = allReviews.filter(r => {
+            let ok = true;
 
-            var url = '@Url.Action("GetAllReviews", "Review", new { area = "Admin" })';
+            if (bookingId)
+                ok &= r.BookingId == bookingId;
 
-            $.ajax({
-                url: url,
-                type: "GET",
-                data: { hotelId: hotelId },
-                success: function (response) {
-                    if (response.success) {
-                        var rows = "";
+            if (userId)
+                ok &= r.UserId == userId;
 
-                        if (response.data.length > 0) {
-                            response.data.forEach(function (r) {
-                                var createdAt = parseDotNetDate(r.CreatedAt).toLocaleDateString();
+            return ok;
+        });
 
-                                rows += `
-                                    <tr id="reviewRow_${r.Id}">
-                                        <td>${r.Id}</td>
-                                        <td>${r.HotelName}</td>
-                                        <td>${r.UserEmail}</td>
-                                        <td>${r.Rating} ⭐</td>
-                                        <td>${r.Title || ""}</td>
-                                        <td>${r.Content}</td>
-                                        <td>${createdAt}</td>
-                                        <td>
-                                            <button class="btn btn-sm btn-danger" onclick="deleteReview(${r.Id})">Xóa</button>
-                                        </td>
-                                    </tr>
-                                `;
-                            });
-                        } else {
-                            rows = `<tr><td colspan="8" class="text-center">Không có dữ liệu</td></tr>`;
-                        }
+        currentPage = 1;
+        renderTable();
+    }
 
-                        $("#reviewTable").html(rows);
-                    } else {
-                        alert(response.message);
-                    }
-                },
-                error: function (xhr) {
-                    console.log(xhr.responseText);
-                    alert("Không thể tải dữ liệu. Lỗi: " + xhr.status);
-                }
-            });
+    // ==============================
+    //            RESET
+    // ==============================
+    function resetFilter() {
+        $("#searchBookingId").val("");
+        $("#searchUserId").val("");
+
+        filtered = allReviews;
+        currentPage = 1;
+        renderTable();
+    }
+
+    function renderTable() {
+        const total = filtered.length;
+        const pages = Math.max(1, Math.ceil(total / pageSize));
+        const start = (currentPage - 1) * pageSize;
+        const data = filtered.slice(start, start + pageSize);
+
+        $("#resultCount").text(total);
+
+        if (total === 0) {
+            $("#reviewTable").html('<tr><td colspan="8" class="text-center py-4">Không có dữ liệu</td></tr>');
+            $("#pagination").html("");
+            return;
         }
 
-  
-        function deleteReview(id) {
-            if (!confirm("Bạn có chắc muốn xóa đánh giá này không?")) return;
+        let html = "";
+        data.forEach(r => {
+            html += `
+                <tr id="reviewRow_${r.Id}">
+                    <td>${r.Id}</td>
+                    <td>${r.BookingId}</td>
+                    <td>${r.UserId}</td>
+                    <td><span class="badge bg-warning text-dark">${r.Rating} ⭐</span></td>
+                    <td>${r.Title ?? "-"}</td>
+                    <td>${r.Content?.slice(0, 80) || ""}</td>
+                    <td>${formatDate(r.CreatedAt)}</td>
+                    <td>
+                        <button class="btn btn-danger btn-sm" onclick="deleteReview(${r.Id})">
+                            <i class="bi bi-trash"></i> Xóa
+                        </button>
+                    </td>
+                </tr>`;
+        });
 
-            var url = '@Url.Action("DeleteReview", "Review", new { area = "Admin" })';
+        $("#reviewTable").html(html);
 
-            $.ajax({
-                url: url,
-                type: "POST",
-                data: { id: id },
-                success: function (response) {
-                    if (response.success) {
-                        alert(response.message);
-                        $("#reviewRow_" + id).remove();
-                    } else {
-                        alert(response.message);
-                    }
-                },
-                error: function (xhr) {
-                    console.log(xhr.responseText);
-                    alert("Xóa thất bại. Lỗi: " + xhr.status);
-                }
-            });
+        // PHÂN TRANG
+        let pag = "";
+        for (let i = 1; i <= pages; i++) {
+            pag += `<li class="page-item ${i === currentPage ? 'active' : ''}">
+                        <a class="page-link" href="#" onclick="currentPage=${i}; renderTable(); return false;">${i}</a>
+                    </li>`;
         }
+        $("#pagination").html(pag);
+    }
+
+    function deleteReview(id) {
+        if (!confirm("Bạn có chắc muốn xóa?")) return;
+
+        const url = '@Url.Action("DeleteReview", "Review", new { area = "Admin" })';
+
+        $.post(url, { id }).done(res => {
+            if (res.success) {
+                allReviews = allReviews.filter(r => r.Id !== id);
+                applyFilter();
+            }
+        });
+    }
     </script>
 }

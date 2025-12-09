@@ -1,96 +1,84 @@
-﻿//using HotelBooking.Models;
-//using System;
-//using System.Linq;
-//using System.Web.Mvc;
+﻿using HotelBooking.Models;
+using System;
+using System.Linq;
+using System.Web.Mvc;
 
-//namespace HotelBooking.Areas.Admin.Controllers
-//{
-//    [Authorize(Roles = "admin")]
-//    public class ReviewController : Controller
-//    {
-//        private readonly DatabaseDataContext _db;
+namespace HotelBooking.Areas.Admin.Controllers
+{
+    [Authorize(Roles = "admin")]
+    public class ReviewController : Controller
+    {
+        private readonly DatabaseDataContext _db;
 
-//        public ReviewController()
-//        {
-//            _db = new DatabaseDataContext();
-//        }
+        public ReviewController()
+        {
+            _db = new DatabaseDataContext();
+        }
 
-//        // GET: Admin/Review/Index
-//        public ActionResult Index()
-//        {
-//            return View();
-//        }
+        // GET: Admin/Review/Index
+        public ActionResult Index()
+        {
+            return View();
+        }
 
-//        // GET: Admin/Review/GetAllReviews - AJAX
-//        [HttpGet]
-//        public ActionResult GetAllReviews(int? hotelId)
-//        {
-//            try
-//            {
-//                var query = _db.Reviews.Where(r => r.DeletedAt == null);
+        // GET: Admin/Review/GetAllReviews (AJAX)
+        [HttpGet]
+        public ActionResult GetAllReviews()
+        {
+            try
+            {
+                var reviews = _db.Reviews
+                    .Where(r => r.DeletedAt == null)
+                    .OrderByDescending(r => r.CreatedAt)
+                    .Select(r => new
+                    {
+                        r.Id,
+                        r.BookingId,
+                        r.UserId,
+                        r.Rating,
+                        r.Title,
+                        r.Content,
+                        r.CreatedAt
+                    })
+                    .ToList();
 
-//                if (hotelId.HasValue)
-//                    query = query.Where(r => r.HotelId == hotelId.Value);
+                return Json(new { success = true, data = reviews }, JsonRequestBehavior.AllowGet);
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "Lỗi: " + ex.Message }, JsonRequestBehavior.AllowGet);
+            }
+        }
 
-//                var reviews = query
-//                    .OrderByDescending(r => r.CreatedAt)
-//                    .Select(r => new
-//                    {
-//                        r.Id,
-//                        HotelName = r.Hotel.Name,
-//                        UserEmail = r.User.Email,
-//                        r.Rating,
-//                        r.Title,
-//                        r.Content,
-//                        r.CreatedAt
-//                    })
-//                    .ToList();
+        // GET: Admin/Review/Details
+        public ActionResult Details(int id)
+        {
+            var review = _db.Reviews.FirstOrDefault(r => r.Id == id);
+            if (review == null)
+                return HttpNotFound();
 
-//                return Json(new { success = true, data = reviews }, JsonRequestBehavior.AllowGet);
-//            }
-//            catch (Exception ex)
-//            {
-//                return Json(new { success = false, message = "Lỗi: " + ex.Message }, JsonRequestBehavior.AllowGet);
-//            }
-//        }
+            return View(review);
+        }
 
-//        // GET: Admin/Review/Details/5
-//        public ActionResult Details(int id)
-//        {
-//            try
-//            {
-//                var review = _db.Reviews.FirstOrDefault(r => r.Id == id);
-//                if (review == null)
-//                    return HttpNotFound();
+        // POST: Admin/Review/DeleteReview (AJAX)
+        [HttpPost]
+        public ActionResult DeleteReview(int id)
+        {
+            try
+            {
+                var review = _db.Reviews.FirstOrDefault(r => r.Id == id);
+                if (review == null)
+                    return Json(new { success = false, message = "Không tìm thấy đánh giá" });
 
-//                return View(review);
-//            }
-//            catch
-//            {
-//                return HttpNotFound();
-//            }
-//        }
+                review.DeletedAt = DateTime.Now;
+                _db.SubmitChanges();
 
-//        // POST: Admin/Review/DeleteReview - AJAX
-//        [HttpPost]
-//        public ActionResult DeleteReview(int id)
-//        {
-//            try
-//            {
-//                var review = _db.Reviews.FirstOrDefault(r => r.Id == id);
-//                if (review != null)
-//                {
-//                    review.DeletedAt = DateTime.Now;
-//                    _db.SubmitChanges();
-
-//                    return Json(new { success = true, message = "Xóa đánh giá thành công" });
-//                }
-//                return Json(new { success = false, message = "Không tìm thấy đánh giá" });
-//            }
-//            catch (Exception ex)
-//            {
-//                return Json(new { success = false, message = "Lỗi: " + ex.Message });
-//            }
-//        }
-//    }
-//}
+                return Json(new { success = true, message = "Xóa đánh giá thành công" });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "Lỗi: " + ex.Message });
+            }
+        }
+    }
+}
